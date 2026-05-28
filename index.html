@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="每日一句">
+<meta name="theme-color" content="#0f0f1a">
+<title>每日一句</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --card: #16213e;
+    --accent-pos: #f0c040;
+    --accent-neg: #9b72cf;
+    --text-primary: #f0ede6;
+    --text-secondary: #a09b8c;
+    --border: rgba(255,255,255,0.07);
+    --radius: 20px;
+    --shadow: 0 8px 40px rgba(0,0,0,0.5);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 env(safe-area-inset-bottom, 20px);
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -30%; left: -20%;
+    width: 70%; height: 70%;
+    background: radial-gradient(ellipse, rgba(240,192,64,0.06) 0%, transparent 65%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -20%; right: -20%;
+    width: 60%; height: 60%;
+    background: radial-gradient(ellipse, rgba(155,114,207,0.07) 0%, transparent 65%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 480px;
+    padding: 0 18px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 52px 0 24px;
+  }
+
+  .header-title {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 13px;
+    letter-spacing: 0.35em;
+    color: var(--text-secondary);
+  }
+
+  .date-badge {
+    font-size: 12px;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+  }
+
+  .quote-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px 30px 28px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  .quote-card.fade-out { opacity: 0; transform: translateY(8px); }
+
+  .quote-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent-pos);
+    transition: background 0.5s;
+  }
+
+  .quote-card.neg::before { background: var(--accent-neg); }
+  .quote-card.usr::before { background: #6ecfb0; }
+
+  .energy-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    font-weight: 500;
+    width: fit-content;
+  }
+
+  .energy-tag.pos { color: var(--accent-pos); background: rgba(240,192,64,0.1); border: 1px solid rgba(240,192,64,0.2); }
+  .energy-tag.neg { color: var(--accent-neg); background: rgba(155,114,207,0.1); border: 1px solid rgba(155,114,207,0.2); }
+  .energy-tag.usr { color: #6ecfb0; background: rgba(110,207,176,0.1); border: 1px solid rgba(110,207,176,0.2); }
+
+  .quote-text {
+    font-family: 'Noto Serif TC', serif;
+    font-size: clamp(18px, 5vw, 22px);
+    line-height: 1.75;
+    font-weight: 700;
+    color: var(--text-primary);
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+
+  .quote-author {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 20px;
+    letter-spacing: 0.08em;
+    text-align: right;
+  }
+
+  .card-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 0.2em;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .card-label::before {
+    content: '';
+    display: block;
+    width: 18px; height: 1px;
+    background: var(--text-secondary);
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 14px 10px;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .btn:active { transform: scale(0.97); }
+
+  .btn-primary { background: var(--accent-pos); color: #1a1000; }
+  .btn-primary:hover { background: #f8d060; }
+
+  .btn-secondary { background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: #22223a; }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-left: 2px;
+  }
+
+  .add-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .add-form textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-family: 'Noto Serif TC', serif;
+    font-size: 15px;
+    line-height: 1.6;
+    padding: 14px 16px;
+    resize: none;
+    outline: none;
+    height: 90px;
+    transition: border-color 0.2s;
+  }
+
+  .add-form textarea:focus { border-color: rgba(240,192,64,0.4); }
+  .add-form textarea::placeholder { color: var(--text-secondary); }
+
+  .add-form .form-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    align-items: center;
+  }
+
+  .add-form input[type="text"] {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .add-form input[type="text"]:focus { border-color: rgba(240,192,64,0.4); }
+  .add-form input[type="text"]::placeholder { color: var(--text-secondary); }
+
+  .btn-add {
+    background: var(--accent-pos);
+    color: #1a1000;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-add:hover { background: #f8d060; }
+  .btn-add:active { transform: scale(0.97); }
+
+  .user-list { margin-bottom: 28px; }
+
+  .quote-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .qi-content {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text-primary);
+    flex: 1;
+  }
+
+  .qi-author {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  .btn-delete {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 2px 4px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .btn-delete:hover { color: #ff6b6b; background: rgba(255,107,107,0.1); }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 13px;
+    padding: 24px;
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    line-height: 1.8;
+  }
+
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 10px 0 36px;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 28px 0 24px;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 36px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(240,192,64,0.95);
+    color: #1a1000;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 30px;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 99;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="header-title">每 日 一 句</div>
+    <div class="date-badge" id="dateDisplay"></div>
+  </header>
+
+  <div class="card-label">今日語錄</div>
+  <div class="quote-card" id="todayCard">
+    <div>
+      <div class="energy-tag pos" id="todayTag">✦ 正能量</div>
+      <div class="quote-text" id="todayText"></div>
+    </div>
+    <div class="quote-author" id="todayAuthor"></div>
+  </div>
+
+  <div class="card-label" id="randomLabel" style="display:none">隨機抽取</div>
+  <div class="quote-card" id="randomCard" style="display:none">
+    <div>
+      <div class="energy-tag pos" id="randomTag">✦ 正能量</div>
+      <div class="quote-text" id="randomText"></div>
+    </div>
+    <div class="quote-author" id="randomAuthor"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="drawRandom()">再抽一句</button>
+    <button class="btn btn-secondary" onclick="scrollToAdd()">＋ 新增語錄</button>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-label">自訂語錄</div>
+
+  <div class="add-form" id="addForm">
+    <textarea id="newQuoteText" placeholder="輸入你喜歡的一句話…" maxlength="120"></textarea>
+    <div class="form-row">
+      <input type="text" id="newQuoteAuthor" placeholder="作者（選填）" maxlength="30">
+      <button class="btn-add" onclick="addQuote()">儲存</button>
+    </div>
+  </div>
+
+  <div class="user-list" id="userList"></div>
+
+  <footer>加到手機主畫面，隨時帶著走 ✦</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BUILTIN = [
+  { text: "你今天的努力，是明天的答案。", author: "佚名", energy: "pos" },
+  { text: "不是因為看見希望才去堅持，是因為堅持才看見希望。", author: "佚名", energy: "pos" },
+  { text: "每一個你不想起床的早晨，都是改變的開始。", author: "佚名", energy: "pos" },
+  { text: "做自己喜歡的事，時間會給你答案。", author: "佚名", energy: "pos" },
+  { text: "太陽每天都是新的，你也可以。", author: "赫拉克利特", energy: "pos" },
+  { text: "先相信自己，再說服別人。", author: "佚名", energy: "pos" },
+  { text: "慢慢來，比較快。", author: "幾米", energy: "pos" },
+  { text: "你比你以為的更勇敢。", author: "小熊維尼", energy: "pos" },
+  { text: "有些路，走了才知道是錯的；但不走，永遠不知道。", author: "佚名", energy: "neg" },
+  { text: "你無法掌控結果，只能掌控今天的付出。", author: "佚名", energy: "neg" },
+  { text: "不是所有努力都有回報，但所有放棄都沒有。", author: "佚名", energy: "neg" },
+  { text: "比起害怕失敗，更應該害怕從沒嘗試過。", author: "佚名", energy: "neg" },
+  { text: "生活不會因為你難過就暫停一下。", author: "佚名", energy: "neg" },
+  { text: "很多事情，等你準備好就太晚了。", author: "佚名", energy: "neg" },
+  { text: "承認現實，是改變的第一步。", author: "佚名", energy: "neg" },
+];
+
+function getUserQuotes() {
+  return JSON.parse(localStorage.getItem('userQuotes') || '[]');
+}
+
+function getAllQuotes() {
+  return [...BUILTIN, ...getUserQuotes()];
+}
+
+function getDayQuote() {
+  const d = new Date();
+  const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  return BUILTIN[seed % BUILTIN.length];
+}
+
+function formatDate() {
+  const d = new Date();
+  const days = ['日','一','二','三','四','五','六'];
+  return `${d.getMonth()+1}月${d.getDate()}日　週${days[d.getDay()]}`;
+}
+
+function applyQuote(q, cardId, tagId, textId, authorId) {
+  const card = document.getElementById(cardId);
+  const tag = document.getElementById(tagId);
+  card.classList.remove('neg','usr');
+  if (q.energy === 'pos') {
+    tag.className = 'energy-tag pos'; tag.textContent = '✦ 正能量';
+  } else if (q.energy === 'neg') {
+    tag.className = 'energy-tag neg'; tag.textContent = '◆ 現實語錄'; card.classList.add('neg');
+  } else {
+    tag.className = 'energy-tag usr'; tag.textContent = '❋ 我的語錄'; card.classList.add('usr');
+  }
+  document.getElementById(textId).textContent = q.text;
+  document.getElementById(authorId).textContent = q.author ? `── ${q.author}` : '';
+}
+
+let lastRandom = -1;
+function drawRandom() {
+  const all = getAllQuotes();
+  const card = document.getElementById('randomCard');
+  card.classList.add('fade-out');
+  setTimeout(() => {
+    let idx;
+    do { idx = Math.floor(Math.random() * all.length); } while (all.length > 1 && idx === lastRandom);
+    lastRandom = idx;
+    applyQuote(all[idx], 'randomCard', 'randomTag', 'randomText', 'randomAuthor');
+    document.getElementById('randomLabel').style.display = 'flex';
+    card.style.display = 'flex';
+    card.classList.remove('fade-out');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 280);
+}
+
+function addQuote() {
+  const textEl = document.getElementById('newQuoteText');
+  const authorEl = document.getElementById('newQuoteAuthor');
+  const text = textEl.value.trim();
+  if (!text) { showToast('請輸入語錄內容'); return; }
+  const author = authorEl.value.trim() || '我';
+  const user = getUserQuotes();
+  user.unshift({ text, author, energy: 'user', id: Date.now() });
+  localStorage.setItem('userQuotes', JSON.stringify(user));
+  textEl.value = ''; authorEl.value = '';
+  renderUserList();
+  showToast('已儲存 ✓');
+}
+
+function deleteQuote(id) {
+  const user = getUserQuotes().filter(q => q.id !== id);
+  localStorage.setItem('userQuotes', JSON.stringify(user));
+  renderUserList();
+  showToast('已刪除');
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderUserList() {
+  const list = document.getElementById('userList');
+  const user = getUserQuotes();
+  if (!user.length) {
+    list.innerHTML = '<div class="empty-state">尚無自訂語錄<br>新增一句屬於你的話吧</div>';
+    return;
+  }
+  list.innerHTML = user.map(q => `
+    <div class="quote-item">
+      <div style="flex:1">
+        <div class="qi-content">${esc(q.text)}</div>
+        <div class="qi-author">── ${esc(q.author)}</div>
+      </div>
+      <button class="btn-delete" onclick="deleteQuote(${q.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+function scrollToAdd() {
+  document.getElementById('addForm').scrollIntoView({ behavior: 'smooth' });
+  setTimeout(() => document.getElementById('newQuoteText').focus(), 400);
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+document.getElementById('dateDisplay').textContent = formatDate();
+applyQuote(getDayQuote(), 'todayCard', 'todayTag', 'todayText', 'todayAuthor');
+renderUserList();
+</script>
+</body>
+</html>
